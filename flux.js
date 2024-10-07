@@ -13,16 +13,18 @@ const dispatch = (newStateValue) => {
   }
 }
 
-subscribe((state) => {
-  console.log("state updated - A", state);
-})
-subscribe((state) => {
-  console.log("state updated - B", state);
+document.querySelector("#addForm").addEventListener('submit', e =>{
+  e.preventDefault();
+  const firstNameInput = e.currentTarget.firstName;
+  dispatch({
+    owner:{
+      firstName: firstNameInput.value
+    }
+  })
 })
 
-dispatch({
-  value:"value A"
-})
-dispatch({
-  value:"value B"
+subscribe(state => {
+  if(state){
+    document.querySelector('#header').textContent = `Le propriétaire du restaurant est ${state.owner.firstName}`
+  }
 })
