@@ -1,78 +1,3 @@
-
-let state = {
-  value: null,
-  list: []
-};
-const subscribers = [];
-
-const dispatch = (newStateValue) => {
-  state = newStateValue;
-  for (const fct of subscribers) {
-      fct(state)
-  }
-}
-
-const subscribe = (subscriberFct) => {
-  subscribers.push(subscriberFct);
-}
-
-subscribe((state) => {
-  console.log(state)
-  if (state.owner) {
-    console.log('Le propriétaire est ajouté', state.owner)
-    document.querySelector('#header').textContent = `Le propriétaire du restaurant est ${state.owner.firstName}`
-  }
-  if (state.list) {
-    document.querySelector('#command').innerHTML = ``;
-    for (let item of state.list) {
-      const itemElement = document.createElement('div')
-      itemElement.innerHTML = `
-      <div>
-      ${item.title} <span>${item.price}</span>
-      </div>
-      `
-      document.querySelector('#command').appendChild(itemElement)
-    }
-  }
-})
-
-dispatch({
-  company: {
-      name: 'Burger du Pré'
-  },
-  list: []
-})
-
-
-document.querySelector('#addForm').addEventListener("submit", (evt) => {
-  evt.preventDefault()
-  const firstNameInput = evt.currentTarget.firstName
-  dispatch({
-      company: {
-          name: 'Burger du Pré'
-      },
-      owner: {
-          firstName: firstNameInput.value,
-      },
-      list: []
-  })
-})
-
-document.querySelectorAll('.orderButton').forEach((element) => {
-  element.addEventListener('click', (event) => {
-      console.info(state)
-      const productId = event.target.dataset['id']
-      const productList = state.list
-      productList.push(PRODUCT_LIST[productId])
-      dispatch({
-          company: {
-              name: 'Burger du Pré'
-          },
-          list: productList,
-      })
-  })
-})
-
 const DoubleCantal = {
   title: 'Double Cantal',
   price: 15.99,
@@ -84,7 +9,6 @@ const SuperCremeux = {
   price: 14.99,
 }
 
-
 const PouletCroquant = {
   title: 'Poulet Croquant',
   price: 17.99,
@@ -95,3 +19,84 @@ const PRODUCT_LIST = {
   SuperCremeux,
   DoubleCantal,
 }
+
+let state = {
+  value: null,
+  list: []
+};
+
+const reducer = (currentState, action ) => {
+  switch (action.type) {
+      case 'ADD_PRODUCT':
+          const listWithNewProduct = [...currentState.list, action.payload]
+          return {...currentState, list: listWithNewProduct}
+      case 'REMOVE_PRODUCT':
+          const list = currentState.list.filter(
+              (item, index) => index !== action.payload
+          )
+          return {...currentState, list: list}
+      case 'APPLY_VOUCHER':
+          const withVoucherList = currentState.list.map(
+              item => item.title === 'Super Crémeux' ? ({...item, price: action.payload.price}) : item
+          )
+          return {...currentState, list: withVoucherList}
+      
+      case 'UPDATE_FIRSTNAME':
+          const owner = {...currentState.owner, firstName: action.payload}
+          return {...currentState, owner}
+      default:
+          return currentState
+  }
+}
+
+
+
+const store = window.RTK.configureStore(
+  {
+      preloadedState: state,
+      reducer
+  }
+)
+
+store.subscribe(() => {
+  const state = store.getState()
+  if (state.owner) {
+      console.log('Le propriétaire est ajouté', state.owner)
+      document.getElementById('header').textContent = `Le propriétaire du restaurant est ${state.owner.firstName}`
+  }
+  if (state.list) {
+      document.getElementById('command').innerHTML = ``;
+      for (let item of state.list) {
+          const itemElement = document.createElement('div')
+          itemElement.innerHTML = `
+          <div>
+          ${item.title} <span>${item.price}</span>
+          </div>
+          `
+          document.getElementById('command').appendChild(itemElement)
+    }
+  }
+})
+
+document.getElementById('addForm').addEventListener("submit", (evt) => {
+  evt.preventDefault()
+  const firstNameInput = evt.currentTarget.firstName
+  store.dispatch({type: 'UPDATE_FIRSTNAME', payload: firstNameInput.value })
+})
+
+document.querySelectorAll('.orderButton').forEach((element) => {
+  element.addEventListener('click', (event) => {
+      const productId = event.target.dataset['id']
+      store.dispatch({type: 'ADD_PRODUCT', payload: PRODUCT_LIST[productId] })
+  })
+})
+
+document.getElementById('voucher').addEventListener("click", (evt) => {
+  store.dispatch({type: 'APPLY_VOUCHER', payload: {price: 2.00} })
+})
+
+
+
+
+
+
